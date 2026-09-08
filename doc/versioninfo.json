@@ -1,13 +1,13 @@
 {
-  "currentVersionWithSuffix": "1.4.4",
+  "currentVersionWithSuffix": "1.4.5",
   "releaseType": "",
-  "currentVersion": "1.4.4",
+  "currentVersion": "1.4.5",
   "currentMajor": 1,
   "currentMinor": 4,
-  "currentFix": 4,
-  "previousVersion": "1.4.3",
+  "currentFix": 5,
+  "previousVersion": "1.4.4",
   "changeGrade": "fix",
-  "versionTimeInfo": "14:25:50",
+  "versionTimeInfo": "15:15:36",
   "versionDateInfo": "2026-09-08",
-  "versionNotes": "- korrektur box\n"
+  "versionNotes": "- fix\n"
 }

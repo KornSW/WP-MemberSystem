@@ -1,14 +1,14 @@
 {
   "name": "KornSW MemberSystem",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "author": "KornSW",
   "homepage": "https://github.com/KornSW/WP-MemberSystem",
-  "download_url": "https://github.com/KornSW/WP-MemberSystem/releases/download/v1.4.4/kmembers.zip",
+  "download_url": "https://github.com/KornSW/WP-MemberSystem/releases/download/v1.4.5/kmembers.zip",
   "requires": "6.2",
   "requires_php": "7.4",
   "tested": "",
   "sections": {
     "description": "Memberbereiche, rollenbasierter Inhaltsschutz und eigener E-Mail-/Passwort-Login.",
-    "changelog": "<h4>Version 1.4.4</h4><ul><li>korrektur box</li></ul>"
+    "changelog": "<h4>Version 1.4.5</h4><ul><li>fix</li></ul>"
   }
 }
