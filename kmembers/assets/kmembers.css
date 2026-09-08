@@ -64,3 +64,22 @@ body.login .kmembers-wp-login-custom input[type="password"] {
     width: 100%;
     max-width: none;
 }
+
+
+/* Native WordPress login anchors for low-level login_form extensions. */
+.kmembers-login-compat#login {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+    margin: 0;
+}
+.kmembers-login-extensions #loginform {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+.kmembers-login-extensions #loginform > :first-child {
+    margin-top: 0;
+}

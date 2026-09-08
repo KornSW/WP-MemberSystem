@@ -60,3 +60,7 @@ Seiten/Beiträge können im MemberSystem-Zugriffsblock 'Defer Onboarding' aktivi
 
 == WordPress-Login-Customizing (1.4.3) ==
 Der normale GET/HEAD-Aufruf von wp-login.php?action=login kann nun (standardmäßig aktiv) als MemberSystem-Login gerendert werden. Die UI nutzt den originalen WordPress-Hook login_form für Erweiterungen anderer Plugins. Ein request-interner Guard verhindert rekursives Einsammeln. Andere WordPress-Loginaktionen, interim-login und reauth bleiben nativ. 'Weitere Anmeldemöglichkeiten' und der bestehende MFA-/Security-Fallback verwenden kmembers_native_login=1 und umgehen die MemberSystem-Vorschaltseite explizit.
+
+
+== Login-UI-Kompatibilität (1.4.5) ==
+Der Link 'Weitere Anmeldemöglichkeiten' wird ausschließlich im von MemberSystem angepassten wp-login.php-Hauptlogin gerendert. Die eigene MemberSystem-Route und eingebettete Login-UI zeigen ihn nicht. Low-Level-Erweiterungen des originalen WordPress-Hooks login_form werden in allen MemberSystem-Login-UIs direkt eingebettet. Für fremde Plugins stehen dabei die nativen DOM-Anker #login (außerhalb wp-login.php, wo WordPress ihn bereits liefert) und form#loginform bereit; das Kompatibilitätsformular postet mit Native-Bypass auf wp-login.php und erhält redirect_to/testcookie.

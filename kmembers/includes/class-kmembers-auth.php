@@ -509,18 +509,23 @@ class KMembers_Auth {
 
         // login_form wird im Core innerhalb des Login-Formulars ausgeführt.
         // Wir geben fremden Erweiterungen deshalb ebenfalls einen eigenen nativen Form-Container.
-        return '<div class="kmembers-login-extensions"><form method="post" action="' . esc_url( $this->native_wp_login_url( $return_to ) ) . '">' .
+        return '<div class="kmembers-login-extensions"><form name="loginform" id="loginform" method="post" action="' . esc_url( $this->native_wp_login_url( $return_to ) ) . '">' .
+            '<input type="hidden" name="redirect_to" value="' . esc_attr( $this->internal_url( $return_to, home_url( '/' ) ) ) . '">' .
+            '<input type="hidden" name="testcookie" value="1">' .
             $html .
             '</form></div>';
     }
 
-    private function render_member_login_ui( $return_to = '', $flow_identifier = '', $source_url = '', $defer_onboarding = false, $include_native_link = true ) {
+    private function render_member_login_ui( $return_to = '', $flow_identifier = '', $source_url = '', $defer_onboarding = false, $wp_login_context = false ) {
         $return_to = $this->internal_url( $return_to, home_url( '/' ) );
         $flow_identifier = sanitize_text_field( (string) $flow_identifier );
         $source_url = esc_url_raw( (string) $source_url );
         $action_url = $this->login_url( $return_to, $flow_identifier, $source_url, $defer_onboarding );
 
         ob_start();
+        if ( ! $wp_login_context ) {
+            echo '<div id="login" class="kmembers-login-compat">';
+        }
         echo '<div class="kmembers-auth kmembers-auth--embedded"><div class="kmembers-auth__box">';
         echo '<p>Bitte geben Sie zunächst Ihre E-Mail-Adresse ein.</p>';
         echo '<form method="post" action="' . esc_url( $action_url ) . '">';
@@ -541,11 +546,14 @@ class KMembers_Auth {
             echo $extensions;
         }
 
-        if ( $include_native_link ) {
+        if ( $wp_login_context ) {
             echo '<p class="kmembers-native-login-link"><a href="' . esc_url( $this->native_wp_login_url( $return_to ) ) . '">Weitere Anmeldemöglichkeiten</a></p>';
         }
 
         echo '</div></div>';
+        if ( ! $wp_login_context ) {
+            echo '</div>';
+        }
         return ob_get_clean();
     }
 
@@ -857,7 +865,7 @@ class KMembers_Auth {
             $this->requested_flow_identifier(),
             $this->requested_source_url(),
             $this->requested_defer_onboarding(),
-            true
+            false
         );
     }
 
