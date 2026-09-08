@@ -47,3 +47,20 @@ body.login .kmembers-wp-login-custom .kmembers-auth__box {
     text-align: center;
     font-size: 12px;
 }
+
+
+/* MemberSystem as customized wp-login.php: deliberately wider than WordPress core login. */
+body.login #login {
+    width: min(560px, calc(100% - 40px));
+}
+body.login .kmembers-wp-login-custom .kmembers-auth__box {
+    width: 100%;
+    max-width: none;
+}
+body.login .kmembers-wp-login-custom input[type="text"],
+body.login .kmembers-wp-login-custom input[type="email"],
+body.login .kmembers-wp-login-custom input[type="password"] {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+}

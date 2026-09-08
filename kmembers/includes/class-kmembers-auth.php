@@ -848,7 +848,7 @@ class KMembers_Auth {
     }
 
     public function render_embedded_login_form( $return_to = '', $flow_identifier = '', $source_url = '', $defer_onboarding = false ) {
-        return $this->render_member_login_ui( $return_to, $flow_identifier, $source_url, $defer_onboarding, true );
+        return $this->render_member_login_ui( $return_to, $flow_identifier, $source_url, $defer_onboarding, false );
     }
 
     private function render_identify() {
