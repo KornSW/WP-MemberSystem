@@ -59,6 +59,7 @@ class KMembers_Settings {
             'magic_body'           => "Hallo,\n\nüber den folgenden Link können Sie sich einmalig anmelden:\n\n{login_link}\n\nDer Link ist 30 Minuten gültig und kann nur einmal verwendet werden.\n\nViele Grüße\n{site_name}",
             'magic_ttl'            => 1800,
             'remember_me'          => 0,
+            'customize_wp_login'   => 1,
             'require_names'        => 0,
             'cleanup_days'         => 10,
             'admin_bar_hidden_roles'=> array(),
@@ -104,6 +105,7 @@ class KMembers_Settings {
         $out['magic_body']      = sanitize_textarea_field( $input['magic_body'] ?? $d['magic_body'] );
         $out['magic_ttl']       = min( DAY_IN_SECONDS, max( 300, absint( $input['magic_ttl'] ?? $d['magic_ttl'] ) ) );
         $out['remember_me']     = empty( $input['remember_me'] ) ? 0 : 1;
+        $out['customize_wp_login'] = empty( $input['customize_wp_login'] ) ? 0 : 1;
         $out['require_names']    = empty( $input['require_names'] ) ? 0 : 1;
         $out['cleanup_days']     = min( 3650, max( 0, absint( $input['cleanup_days'] ?? $d['cleanup_days'] ) ) );
         $available_roles = array_keys( wp_roles()->roles );
@@ -211,6 +213,7 @@ class KMembers_Settings {
                     <tr><th>Memberbereich</th><td><?php wp_dropdown_pages( array( 'name' => self::OPTION.'[member_page_id]', 'selected' => $s['member_page_id'], 'show_option_none' => '— Nicht ausgewählt —' ) ); ?></td></tr>
                     <tr><th>Account-Erweiterungsseite</th><td><input class="regular-text" name="<?php echo esc_attr(self::OPTION); ?>[account_embed_page_slug]" value="<?php echo esc_attr($s['account_embed_page_slug']); ?>" placeholder="z. B. account-details"><p class="description">Optionaler Seiten-Slug. Der Inhalt dieser veröffentlichten Seite wird in der Account-UI direkt oberhalb der MemberSystem-Profildaten eingebettet und kann z. B. Shortcodes anderer Plugins enthalten.</p></td></tr>
                     <tr><th>Login-Pfad</th><td><code><?php echo esc_html( home_url( '/' ) ); ?></code><input name="<?php echo esc_attr( self::OPTION ); ?>[login_slug]" value="<?php echo esc_attr( $s['login_slug'] ); ?>" class="regular-text"><p class="description">Nach Änderung bitte einmal „Einstellungen → Permalinks“ speichern.</p></td></tr>
+                    <tr><th>WordPress-Standardlogin</th><td><label><input type="checkbox" name="<?php echo esc_attr(self::OPTION); ?>[customize_wp_login]" value="1" <?php checked($s['customize_wp_login'],1); ?>> normalen <code>wp-login.php</code>-Login zunächst als MemberSystem-Login anzeigen</label><p class="description">Andere WordPress-Loginaktionen bleiben unverändert. „Weitere Anmeldemöglichkeiten“ sowie MFA-/Security-Fallbacks öffnen die originale WordPress-Maske mit internem Native-Bypass.</p></td></tr>
                     <?php $fields = array('logged_in_text'=>'Text: eingeloggt','logged_out_text'=>'Text: ausgeloggt','logout_label'=>'Link: Ausloggen','account_label'=>'Link: Account','member_label'=>'Link: Memberbereich','login_label'=>'Link: Einloggen/Registrieren','no_access_title'=>'Titel: Kein Zugriff'); foreach($fields as $key=>$label): ?>
                     <tr><th><?php echo esc_html($label); ?></th><td><input class="regular-text" name="<?php echo esc_attr(self::OPTION.'['.$key.']'); ?>" value="<?php echo esc_attr($s[$key]); ?>"></td></tr><?php endforeach; ?>
                     <tr><th>Text: Kein Zugriff</th><td><textarea class="large-text" rows="3" name="<?php echo esc_attr(self::OPTION); ?>[no_access_text]"><?php echo esc_textarea($s['no_access_text']); ?></textarea></td></tr>
@@ -234,6 +237,7 @@ class KMembers_Settings {
             <hr style="margin:32px 0 24px">
             <h2>Kurzhilfe</h2>
             <p><strong>Inhalte schützen:</strong> In der Bearbeitung von Seiten und Beiträgen findest du den Bereich „MemberSystem (KornSW) – Zugriff“. Dort können eine oder mehrere erlaubte Rollen sowie getrennte Weiterleitungsziele für Gäste und angemeldete Benutzer ohne passende Rolle festgelegt werden.</p>
+            <p><strong>WordPress-Login:</strong> Wenn die Standardlogin-Anpassung aktiv ist, zeigt ein normaler Aufruf von <code>wp-login.php</code> zunächst dieselbe MemberSystem-Login-UI wie die eigene Loginroute und eingebettete Logins. Zusätzlich wird der originale WordPress-Hook <code>login_form</code> ausgeführt, damit Login-UI anderer Plugins darunter erscheinen kann. Der Link „Weitere Anmeldemöglichkeiten“ und der MFA-/Security-Fallback verwenden <code>kmembers_native_login=1</code> und zeigen die originale WordPress-Loginmaske.</p>
             <p><code>[kMemberEmbed site="slug" fallback="slug2" flow_identifier="Whitepaper Download" defer_onboarding="true"]</code><br>
             Bettet den Inhalt einer anderen veröffentlichten Seite ein. <code>site</code> ist Pflicht und kann ein Seiten-Slug oder eine Seiten-ID sein. Die für die Zielseite hinterlegten Rollenregeln werden geprüft. Hat der aktuelle Benutzer keinen Zugriff, wird optional die mit <code>fallback</code> angegebene Seite eingebettet; ohne Fallback bleibt die Ausgabe leer. <code>flow_identifier</code> ist optional und überschreibt für diesen Embed-Vorgang den an der Zielseite hinterlegten Flow-Identifier. <code>defer_onboarding="true"</code> überspringt für den durch diesen Embed gestarteten Login das einmalige Passwortangebot und führt direkt zum Ziel; die Entscheidung gilt nur für diesen Login-Token.</p>
             <p><code>[kMemberLogonState]</code><br>

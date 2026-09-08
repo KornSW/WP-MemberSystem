@@ -56,3 +56,7 @@ Ein externer Handler darf true nur zurückgeben, wenn der Versand erfolgreich ü
 
 == Defer Onboarding (1.4.2) ==
 Seiten/Beiträge können im MemberSystem-Zugriffsblock 'Defer Onboarding' aktivieren. Der Wert wird in den einmaligen Login-Token übernommen. Bei erfolgreichem Token-Login wird das einmalige Passwortangebot für genau diesen Flow übersprungen; der Login zählt dennoch als erfolgreicher Login und schützt vor Cleanup. Der Shortcode kann mit defer_onboarding="true" oder "false" explizit überschreiben.
+
+
+== WordPress-Login-Customizing (1.4.3) ==
+Der normale GET/HEAD-Aufruf von wp-login.php?action=login kann nun (standardmäßig aktiv) als MemberSystem-Login gerendert werden. Die UI nutzt den originalen WordPress-Hook login_form für Erweiterungen anderer Plugins. Ein request-interner Guard verhindert rekursives Einsammeln. Andere WordPress-Loginaktionen, interim-login und reauth bleiben nativ. 'Weitere Anmeldemöglichkeiten' und der bestehende MFA-/Security-Fallback verwenden kmembers_native_login=1 und umgehen die MemberSystem-Vorschaltseite explizit.

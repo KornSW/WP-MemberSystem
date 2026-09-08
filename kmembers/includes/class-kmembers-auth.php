@@ -19,6 +19,7 @@ class KMembers_Auth {
 
     private $settings;
     private $access;
+    private static $Rendering_Wp_Login_Extensions = false;
 
     public function __construct( $settings, $access ) {
         $this->settings = $settings;
@@ -30,6 +31,8 @@ class KMembers_Auth {
         add_action( 'after_password_reset', array( $this, 'mark_password_set' ), 10, 2 );
         add_action( 'profile_update', array( $this, 'profile_update' ), 10, 2 );
         add_filter( 'login_message', array( $this, 'extended_login_message' ) );
+        add_action( 'login_init', array( $this, 'maybe_customize_wp_login' ), 1 );
+        add_action( 'login_enqueue_scripts', array( $this, 'enqueue_wp_login_assets' ) );
         add_action( 'wp_login', array( $this, 'mark_user_logged_in' ), 20, 2 );
         add_action( 'kmembers_cleanup_unlogged_users', array( $this, 'cleanup_unlogged_users' ) );
     }
@@ -410,10 +413,13 @@ class KMembers_Auth {
         if ( $context_token ) delete_transient( 'kmembers_identify_' . hash( 'sha256', $context_token ) );
         wp_clear_auth_cookie();
         wp_set_current_user( 0 );
-        $login_url = add_query_arg( array(
-            'kmembers_extended_login' => '1',
-            'log' => $user instanceof WP_User ? $user->user_login : '',
-        ), wp_login_url( $this->internal_url( $return_to, home_url( '/' ) ) ) );
+        $login_url = $this->native_wp_login_url(
+            $this->internal_url( $return_to, home_url( '/' ) ),
+            array(
+                'kmembers_extended_login' => '1',
+                'log' => $user instanceof WP_User ? $user->user_login : '',
+            )
+        );
         wp_safe_redirect( $login_url );
         exit;
     }
@@ -422,6 +428,125 @@ class KMembers_Auth {
         if ( empty( $_GET['kmembers_extended_login'] ) ) return $message;
         $notice = '<div class="message"><p><strong>' . esc_html__( 'Für Ihren Account ist ein erweiterter Login nötig.', 'kmembers' ) . '</strong><br>' . esc_html__( 'Bitte versuchen Sie die Anmeldung über diese reguläre WordPress-Anmeldeseite erneut.', 'kmembers' ) . '</p></div>';
         return $notice . $message;
+    }
+
+    public function enqueue_wp_login_assets() {
+        if ( empty( $this->settings->get( 'customize_wp_login', 1 ) ) ) return;
+        wp_enqueue_style( 'kmembers', KMEMBERS_URL . 'assets/kmembers.css', array(), KMEMBERS_VERSION );
+        wp_enqueue_script( 'kmembers', KMEMBERS_URL . 'assets/kmembers.js', array(), KMEMBERS_VERSION, true );
+    }
+
+    private function native_wp_login_url( $return_to = '', $extra_args = array() ) {
+        $url = site_url( 'wp-login.php', 'login' );
+        $args = array( 'kmembers_native_login' => '1' );
+        $return_to = $this->internal_url( $return_to, '' );
+        if ( '' !== $return_to ) $args['redirect_to'] = $return_to;
+        if ( is_array( $extra_args ) ) {
+            foreach ( $extra_args as $key => $value ) {
+                $key = sanitize_key( $key );
+                if ( '' === $key || null === $value || false === $value || '' === (string) $value ) continue;
+                $args[$key] = sanitize_text_field( (string) $value );
+            }
+        }
+        return add_query_arg( $args, $url );
+    }
+
+    private function is_native_wp_login_requested() {
+        return ! empty( $_REQUEST['kmembers_native_login'] );
+    }
+
+    public function maybe_customize_wp_login() {
+        if ( self::$Rendering_Wp_Login_Extensions ) return;
+        if ( empty( $this->settings->get( 'customize_wp_login', 1 ) ) ) return;
+        if ( $this->is_native_wp_login_requested() ) return;
+
+        $method = strtoupper( (string) ( $_SERVER['REQUEST_METHOD'] ?? 'GET' ) );
+        if ( ! in_array( $method, array( 'GET', 'HEAD' ), true ) ) return;
+
+        $action = sanitize_key( wp_unslash( $_REQUEST['action'] ?? 'login' ) );
+        if ( '' === $action ) $action = 'login';
+        if ( 'login' !== $action ) return;
+
+        // Core-Sonderfälle brauchen die unveränderte wp-login.php-Oberfläche.
+        if ( ! empty( $_REQUEST['interim-login'] ) || ! empty( $_REQUEST['reauth'] ) ) return;
+
+        $return_to = $this->internal_url( $_REQUEST['redirect_to'] ?? '', home_url( '/' ) );
+        $source_url = esc_url_raw( wp_get_referer() ?: '' );
+
+        if ( ! function_exists( 'login_header' ) || ! function_exists( 'login_footer' ) ) return;
+
+        nocache_headers();
+        login_header( __( 'Anmelden', 'kmembers' ) );
+        echo '<div class="kmembers-wp-login-custom">';
+        echo $this->render_member_login_ui( $return_to, '', $source_url, false, true );
+        echo '</div>';
+        login_footer();
+        exit;
+    }
+
+    private function capture_wp_login_extensions( $return_to = '' ) {
+        if ( self::$Rendering_Wp_Login_Extensions ) return '';
+
+        self::$Rendering_Wp_Login_Extensions = true;
+        $level = ob_get_level();
+        ob_start();
+
+        try {
+            /**
+             * Originaler WordPress-Erweiterungspunkt der regulären Loginmaske.
+             * MemberSystem bietet bewusst keinen parallelen Provider-/Button-Contract an.
+             */
+            do_action( 'login_form' );
+            $html = ob_get_clean();
+        } finally {
+            while ( ob_get_level() > $level ) {
+                ob_end_clean();
+            }
+            self::$Rendering_Wp_Login_Extensions = false;
+        }
+
+        if ( ! isset( $html ) || '' === trim( (string) $html ) ) return '';
+
+        // login_form wird im Core innerhalb des Login-Formulars ausgeführt.
+        // Wir geben fremden Erweiterungen deshalb ebenfalls einen eigenen nativen Form-Container.
+        return '<div class="kmembers-login-extensions"><form method="post" action="' . esc_url( $this->native_wp_login_url( $return_to ) ) . '">' .
+            $html .
+            '</form></div>';
+    }
+
+    private function render_member_login_ui( $return_to = '', $flow_identifier = '', $source_url = '', $defer_onboarding = false, $include_native_link = true ) {
+        $return_to = $this->internal_url( $return_to, home_url( '/' ) );
+        $flow_identifier = sanitize_text_field( (string) $flow_identifier );
+        $source_url = esc_url_raw( (string) $source_url );
+        $action_url = $this->login_url( $return_to, $flow_identifier, $source_url, $defer_onboarding );
+
+        ob_start();
+        echo '<div class="kmembers-auth kmembers-auth--embedded"><div class="kmembers-auth__box">';
+        echo '<p>Bitte geben Sie zunächst Ihre E-Mail-Adresse ein.</p>';
+        echo '<form method="post" action="' . esc_url( $action_url ) . '">';
+        wp_nonce_field( 'kmembers_auth', 'kmembers_nonce' );
+        echo '<input type="hidden" name="kmembers_action" value="identify">';
+        echo '<input type="hidden" name="return_to" value="' . esc_attr( $return_to ) . '">';
+        if ( '' !== $flow_identifier ) echo '<input type="hidden" name="flow_identifier" value="' . esc_attr( $flow_identifier ) . '">';
+        if ( '' !== $source_url ) echo '<input type="hidden" name="source_url" value="' . esc_attr( $source_url ) . '">';
+        if ( $defer_onboarding ) echo '<input type="hidden" name="defer_onboarding" value="1">';
+        echo '<div class="kmembers-hp"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>';
+        echo '<p><label>E-Mail-Adresse<br><input type="text" name="email" required autocomplete="email" inputmode="email"></label></p>';
+        echo '<button class="kmembers-button" type="submit">Weiter</button>';
+        echo '</form>';
+
+        $extensions = $this->capture_wp_login_extensions( $return_to );
+        if ( '' !== $extensions ) {
+            echo '<div class="kmembers-login-extensions-separator"><span>oder</span></div>';
+            echo $extensions;
+        }
+
+        if ( $include_native_link ) {
+            echo '<p class="kmembers-native-login-link"><a href="' . esc_url( $this->native_wp_login_url( $return_to ) ) . '">Weitere Anmeldemöglichkeiten</a></p>';
+        }
+
+        echo '</div></div>';
+        return ob_get_clean();
     }
 
     private function send_magic( $user, $target, $is_initial_signup = false, $extra_context = array() ) {
@@ -723,33 +848,17 @@ class KMembers_Auth {
     }
 
     public function render_embedded_login_form( $return_to = '', $flow_identifier = '', $source_url = '', $defer_onboarding = false ) {
-        $return_to = $this->internal_url( $return_to, home_url( '/' ) );
-        $flow_identifier = sanitize_text_field( (string) $flow_identifier );
-        $source_url = esc_url_raw( (string) $source_url );
-        $action_url = $this->login_url( $return_to, $flow_identifier, $source_url, $defer_onboarding );
-
-        ob_start();
-        echo '<div class="kmembers-auth kmembers-auth--embedded"><div class="kmembers-auth__box">';
-        echo '<p>Bitte geben Sie zunächst Ihre E-Mail-Adresse ein.</p>';
-        echo '<form method="post" action="' . esc_url( $action_url ) . '">';
-        wp_nonce_field( 'kmembers_auth', 'kmembers_nonce' );
-        echo '<input type="hidden" name="kmembers_action" value="identify">';
-        echo '<input type="hidden" name="return_to" value="' . esc_attr( $return_to ) . '">';
-        if ( '' !== $flow_identifier ) echo '<input type="hidden" name="flow_identifier" value="' . esc_attr( $flow_identifier ) . '">';
-        if ( '' !== $source_url ) echo '<input type="hidden" name="source_url" value="' . esc_attr( $source_url ) . '">';
-        if ( $defer_onboarding ) echo '<input type="hidden" name="defer_onboarding" value="1">';
-        echo '<div class="kmembers-hp"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>';
-        echo '<p><label>E-Mail-Adresse<br><input type="text" name="email" required autocomplete="email" inputmode="email"></label></p>';
-        echo '<button class="kmembers-button" type="submit">Weiter</button>';
-        echo '</form></div></div>';
-        return ob_get_clean();
+        return $this->render_member_login_ui( $return_to, $flow_identifier, $source_url, $defer_onboarding, true );
     }
 
     private function render_identify() {
-        echo '<p>Bitte geben Sie zunächst Ihre E-Mail-Adresse ein.</p><form method="post">';
-        $this->base_fields( 'identify' );
-        echo '<div class="kmembers-hp"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>';
-        echo '<p><label>E-Mail-Adresse<br><input type="text" name="email" required autocomplete="email" inputmode="email"></label></p><button class="kmembers-button" type="submit">Weiter</button></form>';
+        echo $this->render_member_login_ui(
+            $this->requested_return_url(),
+            $this->requested_flow_identifier(),
+            $this->requested_source_url(),
+            $this->requested_defer_onboarding(),
+            true
+        );
     }
 
     private function render_account( $ctx ) {

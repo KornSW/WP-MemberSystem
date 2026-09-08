@@ -5,3 +5,45 @@
 
 .kmembers-profile-fields input[type=text]{background:#fff}.kmembers-passwordless-choice{margin:8px 0 4px}
 .kmembers-auth hr{margin:24px 0;border:0;border-top:1px solid #dcdcde}.kmembers-auth h2{margin-top:0}.kmembers-auth form+hr{margin-top:26px}
+
+
+/* WordPress-Login-Customizing / fremde Login-Erweiterungen */
+body.login .kmembers-wp-login-custom .kmembers-auth {
+    max-width: none;
+    margin: 0;
+}
+body.login .kmembers-wp-login-custom .kmembers-auth__box {
+    box-sizing: border-box;
+    width: 100%;
+}
+.kmembers-login-extensions {
+    margin-top: 14px;
+}
+.kmembers-login-extensions > form {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+.kmembers-login-extensions-separator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 18px 0 8px;
+    opacity: .7;
+    font-size: 12px;
+}
+.kmembers-login-extensions-separator::before,
+.kmembers-login-extensions-separator::after {
+    content: "";
+    height: 1px;
+    background: currentColor;
+    opacity: .25;
+    flex: 1;
+}
+.kmembers-native-login-link {
+    margin-top: 18px !important;
+    text-align: center;
+    font-size: 12px;
+}
