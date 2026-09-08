@@ -1,6 +1,8 @@
 <?php
 /**
  * Plugin Name: KornSW MemberSystem
+ * Update URI: https://raw.githubusercontent.com/KornSW/WP-MemberSystem/master/doc/kmembers.update.json
+ * Plugin URI: https://github.com/KornSW/WP-MemberSystem
  * Description: Memberbereiche, rollenbasierter Inhaltsschutz und eigener E-Mail-/Passwort-Login.
  * Version: 1.4.4
  * Author: KornSW
@@ -12,6 +14,13 @@
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
+
+
+/*************** SELF-UPDATE ***************/
+define( 'KSWKORNSWMEMBER5B4B_SELF_UPDATE_DIAGNOSTICS', false );
+require_once __DIR__ . '/self-update.php';
+kswkornswmember5b4b_bootstrap( __FILE__ );
+/*******************************************/
 
 define( 'KMEMBERS_VERSION', '1.4.4' );
 define( 'KMEMBERS_FILE', __FILE__ );
