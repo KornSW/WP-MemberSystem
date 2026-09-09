@@ -4,7 +4,7 @@
  * Update URI: https://raw.githubusercontent.com/KornSW/WP-MemberSystem/master/doc/kmembers.update.json
  * Plugin URI: https://github.com/KornSW/WP-MemberSystem
  * Description: Memberbereiche, rollenbasierter Inhaltsschutz und eigener E-Mail-/Passwort-Login.
- * Version: 1.4.5
+ * Version: 1.4.6
  * Author: KornSW
  * Text Domain: kmembers
  * Requires at least: 6.2

@@ -4,6 +4,11 @@
 
 *(none)*
 
+## v 1.4.6
+released **2026-09-09**, including:
+ - added license
+
+
 ## v 1.4.5
 released **2026-09-08**, including:
  - fix
